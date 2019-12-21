@@ -8,6 +8,7 @@ class Display
 private:
     std::string _max_brightness_file;
     std::string _cur_brightness_file;
+    std::string _state_file;
     bool _is_on;
 
     int _min_brightness;
@@ -31,6 +32,7 @@ public:
     //SETTERS
     void set_max_brightness_file(const std::string &file);
     void set_cur_brightness_file(const std::string &file);
+    void set_state_file(const std::string &file);
     [[nodiscard]] bool set_cur_brightness(int brightness);
     void set_cur_brightness_from_file();
     void set_is_on(bool value);

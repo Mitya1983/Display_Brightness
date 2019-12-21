@@ -8,34 +8,26 @@ bool MT::write_brightness_file_path()
     std::filesystem::path path("/sys/class/backlight");
     std::filesystem::directory_entry backlight_folder(path);
     if (backlight_folder.exists() && backlight_folder.is_directory()){
-        Log::log().writeToLog("Searching for subfolders in '/sys/class/backlight' folder");
+        MT::Log::log().writeToLog("Searching for subfolders in '/sys/class/backlight' folder");
         for (auto &i : std::filesystem::directory_iterator(backlight_folder)){
             if (i.is_directory()){
-                Log::log().writeToLog("\'" + i.path().filename().string() + "\' folder was found");
-                Log::log().writeToLog("Searching for 'brightness' file");
+                MT::Log::log().writeToLog("\'" + i.path().filename().string() + "\' folder was found");
+                MT::Log::log().writeToLog("Searching for 'brightness' file");
                 for (auto &j : std::filesystem::directory_iterator(i)){
                     if (j.is_regular_file()){
                         if (j.path().filename().string() == "brightness"){
                             found = true;
-                            Log::log().writeToLog("\'brightness\' file was found");
-                            std::ofstream brightness_path(std::filesystem::current_path().string() + "brightness_path", std::ios::trunc);
+                            MT::Log::log().writeToLog("\'brightness\' file was found");
+                            std::ofstream brightness_path(std::filesystem::current_path().string() + "/brightness_path", std::ios::trunc);
                             if (!brightness_path.is_open()){
-                                std::string msg = "bool MT::write_brightness_file_path(): ERROR on creat \'brightness_path\' file - ";
+                                std::string msg = "bool MT::write_brightness_file_path(): ERROR on create \'brightness_path\' file - ";
                                 msg += std::error_code(errno, std::generic_category()).message();
                                 throw std::fstream::failure(msg);
                             }
                             brightness_path << j.path() << std::endl;
                             brightness_path.close();
-                            Log::log().writeToLog("\'brightness_path\' file was succesfully created");
-                            Log::log().writeToLog("Changing permissions of \'brightness\' file");
-//                            try {
-//                                std::filesystem::permissions(j, std::filesystem::perms::others_write, std::filesystem::perm_options::add);
-//                            } catch (std::filesystem::filesystem_error &e) {
-//                                std::string msg = "Error on changing the permissions on \'brightness\' file: ";
-//                                msg +=  e.what();
-//                                Log::log().writeToLog(msg);
-//                                throw e;
-//                            }
+                            MT::Log::log().writeToLog("\'brightness_path\' file was succesfully created");
+                            MT::Log::log().writeToLog("Changing permissions of \'brightness\' file");
                             break;
                         }
                     }
@@ -47,7 +39,7 @@ bool MT::write_brightness_file_path()
         }
     }
     if (!found){
-        Log::log().writeToLog("\'brightness\' file wasn't found");
+        MT::Log::log().writeToLog("\'brightness\' file wasn't found");
     }
     return found;
 }
@@ -58,25 +50,25 @@ bool MT::write_actual_brightness_file_path()
     std::filesystem::path path("/sys/class/backlight");
     std::filesystem::directory_entry backlight_folder(path);
     if (backlight_folder.exists() && backlight_folder.is_directory()){
-        Log::log().writeToLog("Searching for subfolders in '/sys/class/backlight' folder");
+        MT::Log::log().writeToLog("Searching for subfolders in '/sys/class/backlight' folder");
         for (auto &i : std::filesystem::directory_iterator(backlight_folder)){
             if (i.is_directory()){
-                Log::log().writeToLog("\'" + i.path().filename().string() + "\' folder was found");
-                Log::log().writeToLog("Searching for 'actual_brightness' file");
+                MT::Log::log().writeToLog("\'" + i.path().filename().string() + "\' folder was found");
+                MT::Log::log().writeToLog("Searching for 'actual_brightness' file");
                 for (auto &j : std::filesystem::directory_iterator(i)){
                     if (j.is_regular_file()){
                         if (j.path().filename().string() == "actual_brightness"){
                             found = true;
-                            Log::log().writeToLog("\'actual_brightness\' file was found");
-                            std::ofstream actual_brightness_path(std::filesystem::current_path().string() + "actual_brightness_path", std::ios::trunc);
+                            MT::Log::log().writeToLog("\'actual_brightness\' file was found");
+                            std::ofstream actual_brightness_path(std::filesystem::current_path().string() + "/actual_brightness_path", std::ios::trunc);
                             if (!actual_brightness_path.is_open()){
-                                std::string msg = "bool MT::write_brightness_file_path(): ERROR on creat \'actual_brightness_path\' file - ";
+                                std::string msg = "bool MT::write_brightness_file_path(): ERROR on create \'actual_brightness_path\' file - ";
                                 msg += std::error_code(errno, std::generic_category()).message();
                                 throw std::fstream::failure(msg);
                             }
                             actual_brightness_path << j.path() << std::endl;
                             actual_brightness_path.close();
-                            Log::log().writeToLog("\'actual_brightness_path\' file was succesfully created");
+                            MT::Log::log().writeToLog("\'actual_brightness_path\' file was succesfully created");
                             break;
                         }
                     }
@@ -88,9 +80,60 @@ bool MT::write_actual_brightness_file_path()
         }
     }
     if (!found){
-        Log::log().writeToLog("\'actual_brightness\' file wasn't found");
+        MT::Log::log().writeToLog("\'actual_brightness\' file wasn't found");
     }
     return found;
+}
+
+bool MT::write_max_brightness_file_path()
+{
+    bool found = false;
+    std::filesystem::path path("/sys/class/backlight");
+    std::filesystem::directory_entry backlight_folder(path);
+    if (backlight_folder.exists() && backlight_folder.is_directory()){
+        MT::Log::log().writeToLog("Searching for subfolders in '/sys/class/backlight' folder");
+        for (auto &i : std::filesystem::directory_iterator(backlight_folder)){
+            if (i.is_directory()){
+                MT::Log::log().writeToLog("\'" + i.path().filename().string() + "\' folder was found");
+                MT::Log::log().writeToLog("Searching for 'max_brightness' file");
+                for (auto &j : std::filesystem::directory_iterator(i)){
+                    if (j.is_regular_file()){
+                        if (j.path().filename().string() == "max_brightness"){
+                            found = true;
+                            MT::Log::log().writeToLog("\'max_brightness\' file was found");
+                            std::ofstream max_brightness_path(std::filesystem::current_path().string() + "/max_brightness_path", std::ios::trunc);
+                            if (!max_brightness_path.is_open()){
+                                std::string msg = "bool MT::write_max_brightness_file_path(): ERROR on create \'max_brightness_path\' file - ";
+                                msg += std::error_code(errno, std::generic_category()).message();
+                                throw std::fstream::failure(msg);
+                            }
+                            max_brightness_path << j.path() << std::endl;
+                            max_brightness_path.close();
+                            MT::Log::log().writeToLog("\'max_brightness_path\' file was succesfully created");
+                            break;
+                        }
+                    }
+                }
+            }
+            if (found){
+                break;
+            }
+        }
+    }
+    if (!found){
+        MT::Log::log().writeToLog("\'actual_brightness\' file wasn't found");
+    }
+    return found;
+}
+
+bool MT::write_display_state_file_path()
+{
+    bool succeded = false;
+    std::filesystem::directory_entry dpms("/sys/class/drm/card0/card0-eDP-1/dpms");
+    if (dpms.exists()){
+        std::
+    }
+    return succeded;
 }
 
 void MT::create_invoke_script(const std::string &path)

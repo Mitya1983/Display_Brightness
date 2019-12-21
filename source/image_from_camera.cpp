@@ -3,9 +3,9 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
 #include <algorithm>
-using namespace MT;
 
-void Image::capture_frame()
+
+void MT::Image::capture_frame()
 {
     cv::VideoCapture _capture;
     _capture.open(0);
@@ -19,7 +19,7 @@ void Image::capture_frame()
     cv::cvtColor(_initial_frame, _frame, cv::COLOR_RGB2GRAY);
 }
 
-unsigned char Image::average_grayscale_value()
+unsigned char MT::Image::average_grayscale_value()
 {
     int sum = 0;
     int devider = 0;
@@ -33,7 +33,7 @@ unsigned char Image::average_grayscale_value()
     return static_cast<unsigned char>(sum / devider);
 }
 
-unsigned char Image::most_used_grayscale_value()
+unsigned char MT::Image::most_used_grayscale_value()
 {
     std::array<int, 256> colors;
     unsigned char max = -1;

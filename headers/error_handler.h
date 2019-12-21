@@ -6,10 +6,13 @@ namespace MT{
 enum class Error
 {
     EmptyArgument,
-    InvalidArgument
+    InvalidArgument,
+    ValueWasntProvided,
+    ValueOutOfRange,
+
 };
 
-std::string error_message(Error error);
+[[nodiscard]] std::string error_message(Error error);
 
 }//namespace MT
 #endif // ERROR_HANDLER_H
