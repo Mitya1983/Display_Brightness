@@ -43,9 +43,10 @@ int main()
         }
         std::cout << "Done" << std::endl;
     }
-    std::cout << "Deleting simlink in /usr/bin: ";
+    std::cout << "Done" << std::endl;
+    std::cout << "Deleting symlink in /usr/bin: ";
     try {
-        std::filesystem::remove("usr/bin/" + MT::Constants::executable_name);
+        std::filesystem::remove("/usr/bin/" + MT::Constants::executable_name);
         std::cout << "Done" << std::endl;
     } catch (std::filesystem::filesystem_error &e) {
         std::cout << e.what() << std::endl;

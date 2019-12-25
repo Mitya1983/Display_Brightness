@@ -52,14 +52,14 @@ int main(int argc, char **argv)
     }
     else{
         std::cout << " NOT found. Must to be set by user!" << std::endl;
-        MT::Log::log().writeToLog("\'brightness\' file wasn't found: " + config.display_brightness_file());
+        MT::Log::log().writeToLog("\'brightness\' file wasn't found.");
     }
     //Serching for max_brightness file and writing path to config
     std::cout << "Searching for \'max_brightness\' file: ";
     MT::write_max_brightness_file_path(config);
     if (config.display_max_brightness_file() != "null"){
         std::cout << "Found" << std::endl;
-        MT::Log::log().writeToLog("\'max_brightness\' file was found: " + config.display_brightness_file());
+        MT::Log::log().writeToLog("\'max_brightness\' file was found: " + config.display_max_brightness_file());
     }
     else{
         std::cout << " NOT found. Must to be set by user!" << std::endl;
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     MT::write_actual_brightness_file_path(config);
     if (config.actual_display_brightness_file() != "null"){
         std::cout << "Found" << std::endl;
-        MT::Log::log().writeToLog("\'actual_brightness\' file was found: " + config.display_brightness_file());
+        MT::Log::log().writeToLog("\'actual_brightness\' file was found: " + config.actual_display_brightness_file());
     }
     else{
         std::cout << " NOT found. Must to be set by user!" << std::endl;
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     MT::write_display_state_file_path(config);
     if (config.display_state_file() != "null"){
         std::cout << "Found" << std::endl;
-        MT::Log::log().writeToLog("\'dpms\' file was found: " + config.display_brightness_file());
+        MT::Log::log().writeToLog("\'dpms\' file was found: " + config.display_state_file());
     }
     else{
         std::cout << " NOT found. Must to be set by user!" << std::endl;
@@ -123,6 +123,7 @@ int main(int argc, char **argv)
         return 0;
     }
     //Creating script in system-sleep directory
+    //ADD chmod to make executable
     std::cout << "Creating invoke script in \'system-sleep\' folder: ";
     if (MT::folder_exists("/lib/systemd/system-sleep")){
         try {
@@ -136,6 +137,7 @@ int main(int argc, char **argv)
         std::cout << "/lib/systemd/system-sleep folder not found. Service start-stop logic will not work" << std::endl;
     }
     //Creating script in system-shutdown directory
+    //ADD chmod to make executable
     std::cout << "Creating invoke script in \'system-shutdown\' folder: ";
     if (MT::folder_exists("/lib/systemd/system-shutdown")){
         try {
@@ -152,7 +154,7 @@ int main(int argc, char **argv)
     //Creating simlink in /usr/bin
     std::cout << "Creating symlink in /usr/bin: ";
     try {
-        std::filesystem::create_symlink(MT::Constants::executable_name, "/usr/bin/dispbr");
+        std::filesystem::create_symlink(config.install_dir() + '/' + MT::Constants::executable_name, "/usr/bin/" + MT::Constants::executable_name);
         std::cout << "Done" << std::endl;
     } catch (std::filesystem::filesystem_error &e) {
         std::cout << e.what() << std::endl;
@@ -163,7 +165,7 @@ int main(int argc, char **argv)
     std::cout << "Copying uninstall_executable to install directory: ";
     std::string uninstall_executable = source_path / "Uninstall";
     try {
-        std::filesystem::copy(executable, std::filesystem::current_path());
+        std::filesystem::copy(uninstall_executable, std::filesystem::current_path());
         std::cout << "Done" << std::endl;
         MT::Log::log().writeToLog("Uninstall_executable copied");
     } catch (std::filesystem::filesystem_error &e) {
