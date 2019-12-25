@@ -56,7 +56,7 @@ void MT::brightness_adjust(Config config)
 
     //Variable to handle display brightness
     std::unique_ptr<Display> display = std::make_unique<Display>();
-    display->set_max_brightness_file(config.max_brightness_file());
+    display->set_max_brightness_file(config.display_max_brightness_file());
     display->set_cur_brightness_file(config.display_brightness_file());
     display->set_state_file(config.display_state_file());
     //SET DISPLAY PARAPMS FROM CONFIG

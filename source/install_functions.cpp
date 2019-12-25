@@ -2,6 +2,7 @@
 #include <fstream>
 #include <filesystem>
 #include <log.h>
+#include "constant_names.h"
 void MT::write_brightness_file_path(Config &config)
 {
     bool found = false;
@@ -137,10 +138,10 @@ void MT::create_invoke_script(const std::string &path)
 {
     std::string file_path = path;
     if (file_path[file_path.length()] == '/'){
-        file_path += "dispbr";
+        file_path += MT::Constants::executable_name;
     }
     else{
-        file_path += "/dispbr";
+        file_path += "/" + MT::Constants::executable_name;
     }
     std::ofstream file(file_path);
     if (!file.is_open()){

@@ -3,6 +3,8 @@ CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
 
+TARGET = dispbr
+
 LIBS += \
     -lpthread \
     -lstdc++fs \

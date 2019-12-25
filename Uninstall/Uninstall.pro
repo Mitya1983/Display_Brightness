@@ -6,5 +6,11 @@ CONFIG -= qt
 LIBS += \
     -lstdc++fs
 
+INCLUDEPATH += \
+    ../headers
+
 SOURCES += \
         main.cpp
+
+HEADERS += \
+    ../headers/constant_names.h

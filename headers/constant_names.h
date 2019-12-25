@@ -5,6 +5,7 @@ namespace MT {
 
 namespace Constants {
 
+const std::string executable_name = "dispbr";
 const std::string status_file_name = "status";
 const std::string pid_file_name = "pid";
 const std::string brightness_values_file_name = "brightness_values";

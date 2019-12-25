@@ -3,6 +3,7 @@
 #include <install_functions.h>
 #include <fstream>
 #include <log.h>
+#include <constant_names.h>
 int main(int argc, char **argv)
 {
     MT::Config config;
@@ -16,10 +17,10 @@ int main(int argc, char **argv)
     case 2:{
         std::string install_dir = argv[1];
         if (install_dir[install_dir.length()] == '/'){
-            install_dir += "dispbr";
+            install_dir += MT::Constants::executable_name;
         }
         else{
-            install_dir += "/dispbr";
+            install_dir += "/" + MT::Constants::executable_name;
         }
         config.set_install_dir_name(install_dir);
         break;
@@ -106,7 +107,7 @@ int main(int argc, char **argv)
     }
     //Copying executable to install dir
     std::cout << "Copying executable to install directory: ";
-    std::string executable = source_path / "dispbr";
+    std::string executable = source_path / MT::Constants::executable_name;
     try {
         std::filesystem::copy(executable, std::filesystem::current_path());
         std::cout << "Done" << std::endl;
@@ -151,7 +152,7 @@ int main(int argc, char **argv)
     //Creating simlink in /usr/bin
     std::cout << "Creating symlink in /usr/bin: ";
     try {
-        std::filesystem::create_symlink("dispbr", "/usr/bin/dispbr");
+        std::filesystem::create_symlink(MT::Constants::executable_name, "/usr/bin/dispbr");
         std::cout << "Done" << std::endl;
     } catch (std::filesystem::filesystem_error &e) {
         std::cout << e.what() << std::endl;
