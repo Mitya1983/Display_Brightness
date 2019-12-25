@@ -5,12 +5,16 @@
 #include <unistd.h>
 #include <signal.h>
 #include <filesystem>
+#include <fstream>
 #include "error_handler.h"
 #include "function_to_fork.h"
 #include "install_functions.h"
 #include "user_input_parser.h"
+#include "constant_names.h"
+#include "config.h"
 int main(int argc, char**argv)
 {
+
     switch (argc) {
     case 1: {
         std::cout << MT::error_message(MT::Error::EmptyArgument) << std::endl;
@@ -29,7 +33,7 @@ int main(int argc, char**argv)
             break;
         }
         case 1:{
-            std::cout << MT::help << std::endl;
+            std::cout << MT::Constants::help_message << std::endl;
             break;
         }
         case 2:{
@@ -37,6 +41,14 @@ int main(int argc, char**argv)
                 std::cout << "Service is already running" << std::endl;
             }
             else{
+                std::unique_ptr<MT::Config> config = std::make_unique<MT::Config>();
+                try {
+                    config->load_config();
+                } catch (std::fstream::failure &e) {
+                    MT::Log::log().writeToLog(e.what());
+                    std::cout << e.what() << std::endl;
+                    exit(EXIT_FAILURE);
+                }
                 pid_t child = fork();
                 if (child < 0){
                     std::string msg = "fork() error: ";
@@ -45,7 +57,7 @@ int main(int argc, char**argv)
                     exit(EXIT_FAILURE);
                 }
                 if (child == 0){
-                    MT::brightness_adjust();
+                    MT::brightness_adjust(*config);
                 }
             }
             break;
@@ -62,19 +74,13 @@ int main(int argc, char**argv)
             break;
         }
         case 4:{
-            std::cout << MT::error_message(MT::Error::ValueWasntProvided) << std::endl;
-            MT::Log::log().writeToLog(MT::error_message(MT::Error::ValueWasntProvided));
-            break;
+            [[fallthrough]];
         }
         case 5:{
-            std::cout << MT::error_message(MT::Error::ValueWasntProvided) << std::endl;
-            MT::Log::log().writeToLog(MT::error_message(MT::Error::ValueWasntProvided));
-            break;
+            [[fallthrough]];
         }
         case 6:{
-            std::cout << MT::error_message(MT::Error::ValueWasntProvided) << std::endl;
-            MT::Log::log().writeToLog(MT::error_message(MT::Error::ValueWasntProvided));
-            break;
+            [[fallthrough]];
         }
         case 7:{
             std::cout << MT::error_message(MT::Error::ValueWasntProvided) << std::endl;
@@ -96,43 +102,17 @@ int main(int argc, char**argv)
         int parse = MT::parse_user_input(argv[1]);
         switch(parse){
         case 0:{
-            std::cout << MT::error_message(MT::Error::InvalidArgument) << std::endl;
-            MT::Log::log().writeToLog(MT::error_message(MT::Error::InvalidArgument));
-            break;
+            [[fallthrough]];
         }
         case 1:{
-            std::cout << MT::help << std::endl;
-            break;
-        }
-        case 2:{
-            if (MT::read_status_from_file() == "running"){
-                std::cout << "Service is already running" << std::endl;
-            }
-            else{
-                pid_t child = fork();
-                if (child < 0){
-                    std::string msg = "fork() error: ";
-                    msg += std::error_code(errno, std::generic_category()).message();
-                    std::cout << msg << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                if (child == 0){
-                    MT::brightness_adjust();
-                }
-            }
-            break;
+            [[fallthrough]];
         }
         case 3:{
-            pid_t child_pid = MT::read_pid_from_file();
-            int kill_status = kill(child_pid, SIGQUIT);
-            if (kill_status < 0){
-                std::string msg = "kill() error: ";
-                msg += std::error_code(errno, std::generic_category()).message();
-                std::cout << msg << std::endl;
-                MT::Log::log().writeToLog(msg);
-                MT::Log::log().writeToLog("Exiting with failure");
-                exit(EXIT_FAILURE);
-            }
+            [[fallthrough]];
+        }
+        case 8:{
+            std::cout << MT::error_message(MT::Error::InvalidArgument) << std::endl;
+            MT::Log::log().writeToLog(MT::error_message(MT::Error::InvalidArgument));
             break;
         }
         case 4:{
@@ -181,10 +161,6 @@ int main(int argc, char**argv)
                     exit(EXIT_FAILURE);
                 }
             }
-            break;
-        }
-        case 8:{
-            std::cout << "Service is " << MT::read_status_from_file() << std::endl;
             break;
         }
         }

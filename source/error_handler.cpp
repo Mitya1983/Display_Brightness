@@ -16,5 +16,8 @@ std::string MT::error_message(MT::Error error)
     case MT::Error::ValueOutOfRange:{
         return "Value for command is out of range.\nUse \'help\' for more information";
     }
+    default:{
+        return "Unknown";
+    }
     }
 }

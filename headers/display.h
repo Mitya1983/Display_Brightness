@@ -16,11 +16,10 @@ private:
     int _cur_brightness;
     int _cur_brightness_proc;
 
-
-    int _read_max_brightness();
-    int _read_cur_brightness();
-    int _cur_brightness_to_proc();
-    bool _read_display_state();
+    [[nodiscard]] int _read_max_brightness();
+    [[nodiscard]] int _read_cur_brightness();
+    [[nodiscard]] int _cur_brightness_to_proc();
+    [[nodiscard]] bool _read_display_state() const;
 public:
     //CONSTRUCTORS
     Display();
@@ -35,7 +34,6 @@ public:
     void set_state_file(const std::string &file);
     [[nodiscard]] bool set_cur_brightness(int brightness);
     void set_cur_brightness_from_file();
-    void set_is_on(bool value);
     //GETTERS
     [[nodiscard]] int max_brightness() const noexcept;
     [[nodiscard]] int cur_brightness() const noexcept;

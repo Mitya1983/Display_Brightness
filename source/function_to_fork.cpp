@@ -11,14 +11,14 @@
 #include <sys/inotify.h>
 #include "display.h"
 #include "image_from_camera.h"
-
+#include <constant_names.h>
 //Global variable for signal handling
 bool working;
 bool read_new_brightness_values;
 std::condition_variable trigger_for_main_thread;
 std::mutex mtx;
 
-void MT::brightness_adjust()
+void MT::brightness_adjust(Config config)
 {
     //Setting up the system signal handling
     struct sigaction signal_action;
@@ -56,6 +56,10 @@ void MT::brightness_adjust()
 
     //Variable to handle display brightness
     std::unique_ptr<Display> display = std::make_unique<Display>();
+    display->set_max_brightness_file(config.max_brightness_file());
+    display->set_cur_brightness_file(config.display_brightness_file());
+    display->set_state_file(config.display_state_file());
+    //SET DISPLAY PARAPMS FROM CONFIG
 
     //Setting up array of brightness values which correspond to luminocity (grayscale) level
     std::array<short, 256> brightness_values;
@@ -70,16 +74,9 @@ void MT::brightness_adjust()
 
     //Variable to store image capturing time interval in seconds
     //By default is 30 seconds
-    unsigned int default_time_interval;
-    try {
-        default_time_interval = MT::get_time_interval_from_file();
-    } catch (std::fstream::failure &e) {
-        std::cout << e.what() << std::endl;
-        MT::Log::log().writeToLog(e.what());
-        MT::Log::log().writeToLog("Exiting with failure");
-        exit(EXIT_FAILURE);
-    }
+    unsigned int default_time_interval = config.time_interval();
     unsigned int time_interval = default_time_interval;
+
     //Variable to store the count of unchanged luminocity checks
     //Used to increase time_imterval variable
     int times_brightness_wasnt_changed = 0;
@@ -115,15 +112,16 @@ void MT::brightness_adjust()
     working = true;
     //Lunching notifier thread
     std::thread notifier(MT::brightness_change_notifier, std::ref(trigger_for_main_thread),
-                         std::ref(brightness_was_changed_by_user), std::ref(brightness_was_changed_by_app), std::move(signal_send));
+                         std::ref(brightness_was_changed_by_user), std::ref(brightness_was_changed_by_app),
+                         std::move(signal_send), std::ref(config.actual_display_brightness_file()));
 
     //Main loop
     MT::Log::log().writeToLog("Starting luminocity check");
     while (true){
-        if (!brightness_was_changed_by_user){
+        if (!brightness_was_changed_by_user && display->is_on()){
             try {
                 image->capture_frame();
-                if (first_image){
+                if (first_image){//Second frame for first invokation (noticed that first camera shot is not accurate)
                     image->capture_frame();
                     first_image = false;
                 }
@@ -139,7 +137,6 @@ void MT::brightness_adjust()
                 bool brightness_was_changed = display->set_cur_brightness(brightness_values[image->average_grayscale_value()]);
                 if (brightness_was_changed){
                     times_brightness_wasnt_changed = 0;
-                    time_interval = get_time_interval_from_file();
                     brightness_was_changed_by_app = true;
                 }
                 else {
@@ -171,8 +168,11 @@ void MT::brightness_adjust()
             }
         }
         else{
-            mtx.lock();
-            brightness_was_changed_by_user = false;
+            if (brightness_was_changed_by_user){
+                mtx.lock();
+                brightness_was_changed_by_user = false;
+                mtx.unlock();
+            }
             mtx.unlock();
         }
         if (!working){
@@ -205,13 +205,14 @@ void MT::brightness_adjust()
 }
 //Notifier function
 void MT::brightness_change_notifier(std::condition_variable &cv, bool &signal_to_read_brightness,
-                                    bool &brightness_was_set_by_app, std::future<void> signal_to_stop)
+                                    bool &brightness_was_set_by_app, std::future<void> signal_to_stop,
+                                    const std::string &actual_brightness_file)
 {
     //READ actual_brightness_file_path from file
     MT::Log::log().writeToLog("Starting notify thread");
     int notifier = inotify_init1(IN_NONBLOCK);
     //Add notifier check here
-    int file_to_watch = inotify_add_watch(notifier, "/sys/class/backlight/intel_backlight/actual_brightness", IN_MODIFY);
+    int file_to_watch = inotify_add_watch(notifier, actual_brightness_file.c_str(), IN_MODIFY);
     if (file_to_watch < 0){
         std::string msg = "void MT::brightness_change_notifier(std::condition_variable &cv, bool &signal_to_read_brightness, std::future<void> signal_to_stop): ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -240,7 +241,7 @@ void MT::brightness_change_notifier(std::condition_variable &cv, bool &signal_to
 
 void MT::write_pid_to_file()
 {
-    std::ofstream file("pid");
+    std::ofstream file(MT::Constants::pid_file_name, std::ios_base::trunc);
     if(!file.is_open()){
         std::string msg = "void MT::write_pid_to_file(): ERROR opening \'pid\' file for writing - ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -253,7 +254,7 @@ void MT::write_pid_to_file()
 
 pid_t MT::read_pid_from_file()
 {
-    std::ifstream file("pid");
+    std::ifstream file(MT::Constants::pid_file_name);
     if(!file.is_open()){
         std::string msg = "pid_t MT::read_pid_from_file(): ERROR opening \'pid\' file for reading - ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -267,7 +268,7 @@ pid_t MT::read_pid_from_file()
 
 void MT::write_status_to_file(Status status)
 {
-    std::ofstream status_file("status", std::ios_base::trunc);
+    std::ofstream status_file(MT::Constants::status_file_name, std::ios_base::trunc);
     if (!status_file.is_open()){
         std::string msg = "void write_process_id_to_file(int process_id): ERROR on opening \'status\' file for writing - ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -294,7 +295,7 @@ void MT::write_status_to_file(Status status)
 
 std::string MT::read_status_from_file()
 {
-    std::ifstream status("status");
+    std::ifstream status(MT::Constants::status_file_name);
     if (!status.is_open()){
         std::string msg = "void MT::read_proces_id_from_file(): ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -331,40 +332,6 @@ void MT::display_brightness_signal_handler(int signal)
         std::unique_lock<std::mutex> lock(mtx);
         trigger_for_main_thread.notify_one();
     }
-}
-int MT::get_time_interval_from_file()
-{
-    int value_to_return = 30;
-    std::string file_name = "time_interval";
-    std::ifstream time_interval(file_name);
-    if (!time_interval.is_open()){
-        if (errno == ENOENT){
-            MT::Log::log().writeToLog("File 'time_interval' is missing, creating new one");
-            std::ofstream file(file_name);
-            if (!file.is_open()){
-                std::string msg = "int MT::get_time_interval_from_file(): ERROR on creating \'time_interval\' file for - ";
-                msg += std::error_code(errno, std::generic_category()).message();
-                throw std::fstream::failure(msg);
-            }
-            file << value_to_return << std::endl;
-            file.close();
-            MT::Log::log().writeToLog("File 'time_interwal' with default starting value (30 sec) was succesfully created.");
-        }
-        else{
-            std::string msg = "int MT::get_time_interval_from_file(): ERROR on opening \'time_interval\' file for reading - ";
-            msg += std::error_code(errno, std::generic_category()).message();
-            throw std::fstream::failure(msg);
-        }
-    }
-    else{
-        MT::Log::log().writeToLog("Reading time interval from file");
-        std::string value;
-        std::getline(time_interval, value);
-        time_interval.close();
-        value_to_return = std::stoi(value);
-        MT::Log::log().writeToLog("Time interval was read succesfully");
-    }
-    return value_to_return;
 }
 
 void MT::setup_brightness_values(std::array<short, 256> &values, int max_brightness)
@@ -448,10 +415,4 @@ void MT::change_brightness_values(int percent, PlusOrMinus operand)
         new_brightness_values << i << std::endl;
     }
     new_brightness_values.close();
-
-}
-
-std::string MT::read_brightness_file_path()
-{
-    std::ifstream brightness_file_path("brightness_file_path");
 }

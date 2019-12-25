@@ -21,12 +21,12 @@ SOURCES += \
         ../../MyLibs/source/log.cpp \
     main.cpp \
     source/config.cpp \
-        source/display.cpp \
-        source/error_handler.cpp \
-        source/function_to_fork.cpp \
-        source/image_from_camera.cpp \
-        source/install_functions.cpp \
-        source/user_input_parser.cpp \
+    source/display.cpp \
+    source/error_handler.cpp \
+    source/function_to_fork.cpp \
+    source/image_from_camera.cpp \
+    source/install_functions.cpp \
+    source/user_input_parser.cpp \
 
 HEADERS += \
     ../../MyLibs/include/Log/log.h \

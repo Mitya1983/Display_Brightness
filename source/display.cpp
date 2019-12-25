@@ -45,7 +45,7 @@ int MT::Display::_cur_brightness_to_proc()
     return int_percent;
 }
 
-bool MT::Display::_read_display_state()
+bool MT::Display::_read_display_state() const
 {
     std::ifstream dpms(_state_file);
     if (!dpms.is_open()){
@@ -60,14 +60,15 @@ bool MT::Display::_read_display_state()
 }
 
 MT::Display::Display() :
-    _max_brightness_file("/sys/class/backlight/intel_backlight/max_brightness"),
-    _cur_brightness_file("/sys/class/backlight/intel_backlight/brightness"),
-    _min_brightness(0)
+    _max_brightness_file(),
+    _cur_brightness_file(),
+    _state_file(),
+    _is_on(false),
+    _min_brightness(0),
+    _max_brightness(0),
+    _cur_brightness(0),
+    _cur_brightness_proc(0)
 {
-    _max_brightness = _read_max_brightness();
-    _cur_brightness = _read_cur_brightness();
-    _cur_brightness_proc = _cur_brightness_to_proc();
-    _is_on = _read_display_state();
 }
 
 void MT::Display::set_max_brightness_file(const std::string &file)
@@ -76,6 +77,7 @@ void MT::Display::set_max_brightness_file(const std::string &file)
         throw std::invalid_argument("void Display::set_max_brightness_file(const std::string &file): Empty string was provided");
     }
     _max_brightness_file = file;
+    _max_brightness = _read_max_brightness();
 }
 
 void MT::Display::set_cur_brightness_file(const std::string &file)
@@ -84,6 +86,8 @@ void MT::Display::set_cur_brightness_file(const std::string &file)
         throw std::invalid_argument("void Display::set_cur_brightness_file(const std::string &file): Empty string was provided");
     }
     _cur_brightness_file = file;
+    _cur_brightness = _read_cur_brightness();
+    _cur_brightness_proc = _cur_brightness_to_proc();
 }
 
 void MT::Display::set_state_file(const std::string &file)
@@ -92,6 +96,7 @@ void MT::Display::set_state_file(const std::string &file)
         throw std::invalid_argument("void MT::Display::set_state_file(const std::string &file): Empty string was provided");
     }
     _state_file = file;
+    _is_on = _read_display_state();
 }
 
 bool MT::Display::set_cur_brightness(int brightness)
@@ -123,11 +128,6 @@ void MT::Display::set_cur_brightness_from_file()
     _cur_brightness_proc = _cur_brightness_to_proc();
 }
 
-void MT::Display::set_is_on(bool value)
-{
-    _is_on = value;
-}
-
 int MT::Display::max_brightness() const noexcept
 {
     return _max_brightness;
@@ -145,5 +145,5 @@ int MT::Display::cur_brightness_proc() const noexcept
 
 bool MT::Display::is_on() const noexcept
 {
-    return _is_on;
+    return _read_display_state();
 }
