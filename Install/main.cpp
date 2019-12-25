@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     std::cout << "Searching for \'brightness\' file: ";
     //Serching for brightness file and writing path to config
     MT::write_brightness_file_path(config);
-    if (config.display_state_file() != "null"){
+    if (config.display_brightness_file() != "null"){
         std::cout << "Found" << std::endl;
         MT::Log::log().writeToLog("\'brightness\' file was found: " + config.display_brightness_file());
     }
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     }
     else{
         std::cout << " NOT found. Must to be set by user!" << std::endl;
-        MT::Log::log().writeToLog("\'max_brightness\' file wasn't found: " + config.display_brightness_file());
+        MT::Log::log().writeToLog("\'max_brightness\' file wasn't found.");
     }
     //Serching for actual_brightness file and writing path to config
     std::cout << "Searching for \'actual_brightness\' file: ";
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     }
     else{
         std::cout << " NOT found. Must to be set by user!" << std::endl;
-        MT::Log::log().writeToLog("\'actual_brightness\' file wasn't found: " + config.display_brightness_file());
+        MT::Log::log().writeToLog("\'actual_brightness\' file wasn't found.");
     }
     //Serching for dpms file and writing path to config
     std::cout << "Searching for \'dpms\' file: ";
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     }
     else{
         std::cout << " NOT found. Must to be set by user!" << std::endl;
-        MT::Log::log().writeToLog("\'dpms\' file wasn't found: " + config.display_brightness_file());
+        MT::Log::log().writeToLog("\'dpms\' file wasn't found.");
     }
     //Writing default time interval to config
     config.set_time_interval(60);
