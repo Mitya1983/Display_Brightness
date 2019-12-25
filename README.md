@@ -3,9 +3,8 @@
 Automatically adjust brightness of laptop display using webcam frame shots.
 Designed for those «lucky ones» who either don’t have light sensor or light sensor isn’t detectable by Ubuntu.
 ## Install
-1. Download archive from release tab.
-2. Extract the archive.
-3. Run Install executable with super_user privileges.
+1. Download three binaries (dispbr, Install and Uninstall) from release from release tab.
+2. Open Terminal and run Install executable with super_user privileges.
    By default service is installed in /opt folder. You can specify another folder by providing it as an argument.
     ```
     Install install_path
