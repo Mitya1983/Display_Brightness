@@ -14,7 +14,6 @@
 #include "config.h"
 int main(int argc, char**argv)
 {
-
     switch (argc) {
     case 1: {
         std::cout << MT::error_message(MT::Error::EmptyArgument) << std::endl;
@@ -37,7 +36,7 @@ int main(int argc, char**argv)
             break;
         }
         case 2:{
-            if (MT::read_status_from_file() == "running"){
+            if (MT::read_status_from_file() == "running" || MT::read_status_from_file() == "sleep"){
                 std::cout << "Service is already running" << std::endl;
             }
             else{
@@ -63,15 +62,20 @@ int main(int argc, char**argv)
             break;
         }
         case 3:{
-            pid_t child_pid = MT::read_pid_from_file();
-            int kill_status = kill(child_pid, SIGQUIT);
-            if (kill_status < 0){
-                std::string msg = "kill() error: ";
-                msg += std::error_code(errno, std::generic_category()).message();
-                std::cout << msg << std::endl;
+            try {
+                pid_t child_pid = MT::read_pid_from_file();
+                int kill_status = kill(child_pid, SIGQUIT);
+                if (kill_status < 0){
+                    std::string msg = "kill() error: ";
+                    msg += std::error_code(errno, std::generic_category()).message();
+                    std::cout << msg << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            } catch (std::fstream::failure &e) {
+                std::cout << e.what() << std::endl;
                 exit(EXIT_FAILURE);
             }
-            break;
         }
         case 4:{
             [[fallthrough]];

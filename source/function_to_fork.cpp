@@ -9,6 +9,7 @@
 #include <thread>
 #include <iostream>
 #include <sys/inotify.h>
+#include <fcntl.h>
 #include "display.h"
 #include "image_from_camera.h"
 #include <constant_names.h>
@@ -20,9 +21,45 @@ std::mutex mtx;
 
 void MT::brightness_adjust(Config config)
 {
+    //Setting stdio
+    MT::Log::log().writeToLog("Open /dev/null");
+    int newstdio = open("/dev/null", O_RDWR);
+    if (newstdio == -1){
+        MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+    }
+    else{
+        MT::Log::log().writeToLog("Done");
+    }
+    int file_change = dup2(newstdio, fileno(stdout));
+    MT::Log::log().writeToLog("Setting stdout");
+    if (file_change == -1){
+        MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+    }
+    else{
+        MT::Log::log().writeToLog("Done");
+    }
+    MT::Log::log().writeToLog("Setting stdin");
+    file_change = dup2(newstdio, fileno(stdin));
+    if (file_change == -1){
+        MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+    }
+    else{
+        MT::Log::log().writeToLog("Done");
+    }
+    MT::Log::log().writeToLog("Setting stderr");
+    file_change = dup2(newstdio, fileno(stderr));
+    if (file_change == -1){
+        MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+    }
+    else{
+        MT::Log::log().writeToLog("Done");
+    }
+    close(newstdio);
+
     //Setting up the system signal handling
     struct sigaction signal_action;
     signal_action.sa_handler = &display_brightness_signal_handler;
+    MT::Log::log().writeToLog("Setting up signal handler for SIGQUIT");
     if (sigaction(SIGQUIT, &signal_action, nullptr) == -1){
         std::string msg = "Error on catching SIGQUIT: ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -30,6 +67,10 @@ void MT::brightness_adjust(Config config)
         MT::Log::log().writeToLog("Exiting with failure");
         exit(EXIT_FAILURE);
     }
+    else{
+        MT::Log::log().writeToLog("Done");
+    }
+    MT::Log::log().writeToLog("Setting up signal handler for SIGINT");
     if (sigaction(SIGINT, &signal_action, nullptr) == -1){
         std::string msg = "Error on catching SIGINT: ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -37,6 +78,10 @@ void MT::brightness_adjust(Config config)
         MT::Log::log().writeToLog("Exiting with failure");
         exit(EXIT_FAILURE);
     }
+    else{
+        MT::Log::log().writeToLog("Done");
+    }
+    MT::Log::log().writeToLog("Setting up signal handler for SIGTERM");
     if (sigaction(SIGTERM, &signal_action, nullptr) == -1){
         std::string msg = "Error on catching SIGTERM: ";
         msg += std::error_code(errno, std::generic_category()).message();
@@ -44,12 +89,19 @@ void MT::brightness_adjust(Config config)
         MT::Log::log().writeToLog("Exiting with failure");
         exit(EXIT_FAILURE);
     }
+    else{
+        MT::Log::log().writeToLog("Done");
+    }
+    MT::Log::log().writeToLog("Setting up signal handler for SIGUSR1");
     if (sigaction(SIGUSR1, &signal_action, nullptr) == -1){
         std::string msg = "Error on catching SIGUSR1: ";
         msg += std::error_code(errno, std::generic_category()).message();
         MT::Log::log().writeToLog(msg);
         MT::Log::log().writeToLog("Exiting with failure");
         exit(EXIT_FAILURE);
+    }
+    else{
+        MT::Log::log().writeToLog("Done");
     }
     /******************************************************************************************************************/
     //VARIABLES
@@ -173,7 +225,6 @@ void MT::brightness_adjust(Config config)
                 brightness_was_changed_by_user = false;
                 mtx.unlock();
             }
-            mtx.unlock();
         }
         if (!working){
             break;
@@ -188,10 +239,12 @@ void MT::brightness_adjust(Config config)
             read_new_brightness_values = false;
         }
         if (time_interval == 9000){
+            MT::Log::log().writeToLog("Resuming from sleep");
             time_interval = default_time_interval;
             MT::write_status_to_file(MT::Status::Running);
         }
         if (brightness_was_changed_by_user){
+            MT::Log::log().writeToLog("Brightness for change from outside. Going to sleep mode");
             display->set_cur_brightness_from_file();
             time_interval = 9000;
             MT::write_status_to_file(MT::Status::Sleep);
@@ -211,14 +264,17 @@ void MT::brightness_change_notifier(std::condition_variable &cv, bool &signal_to
     //READ actual_brightness_file_path from file
     MT::Log::log().writeToLog("Starting notify thread");
     int notifier = inotify_init1(IN_NONBLOCK);
-    //Add notifier check here
+    if (notifier == -1){
+        MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+        exit(EXIT_FAILURE);
+    }
     int file_to_watch = inotify_add_watch(notifier, actual_brightness_file.c_str(), IN_MODIFY);
-    if (file_to_watch < 0){
+    if (file_to_watch == -1){
         std::string msg = "void MT::brightness_change_notifier(std::condition_variable &cv, bool &signal_to_read_brightness, std::future<void> signal_to_stop): ";
         msg += std::error_code(errno, std::generic_category()).message();
         MT::Log::log().writeToLog(msg);
         MT::Log::log().writeToLog("Exiting notify thread with failure");
-        return;
+        exit(EXIT_FAILURE);
     }
     std::array<char, 64> buffer;
     while (signal_to_stop.wait_for(std::chrono::milliseconds(500))==std::future_status::timeout){
@@ -295,9 +351,9 @@ void MT::write_status_to_file(Status status)
 
 std::string MT::read_status_from_file()
 {
-    std::ifstream status(MT::Constants::status_file_name);
+    std::ifstream status(MT::Constants::status_file_name, std::ios_base::in);
     if (!status.is_open()){
-        std::string msg = "void MT::read_proces_id_from_file(): ";
+        std::string msg = "std::string MT::read_status_from_file(): ";
         msg += std::error_code(errno, std::generic_category()).message();
         throw std::fstream::failure(msg);
     }
@@ -347,7 +403,7 @@ void MT::setup_brightness_values(std::array<short, 256> &values, int max_brightn
                 throw std::fstream::failure(msg);
             }
             int brightness_step = max_brightness / 100 * 5;
-            for(int i = 0, brightness_value = brightness_step * 2.5; i < 256; ++i){
+            for(int i = 0, brightness_value = brightness_step * 2; i < 256; ++i){
                 if (i > 12*19){
                     brightness_value = max_brightness;
                 }

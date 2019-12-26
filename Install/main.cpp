@@ -7,7 +7,8 @@
 int main(int argc, char **argv)
 {
     MT::Config config;
-    MT::Log::log().set_file_name("install_log.txt");
+    std::string log_file = std::filesystem::current_path().string() + "/install_log.txt";
+    MT::Log::log().set_file_name(log_file);
     //Create install directory
     switch (argc){
     case 1:{
@@ -123,11 +124,13 @@ int main(int argc, char **argv)
         return 0;
     }
     //Creating script in system-sleep directory
-    //ADD chmod to make executable
     std::cout << "Creating invoke script in \'system-sleep\' folder: ";
     if (MT::folder_exists("/lib/systemd/system-sleep")){
         try {
             MT::create_invoke_script("/lib/systemd/system-sleep");
+            std::filesystem::permissions("/lib/systemd/system-sleep/" + MT::Constants::executable_name,
+                                         std::filesystem::perms::owner_exec,
+                                         std::filesystem::perm_options::add);
             std::cout << "Done" << std::endl;
         } catch (std::fstream::failure &e) {
             std::cout << e.what() << std::endl;
@@ -137,11 +140,13 @@ int main(int argc, char **argv)
         std::cout << "/lib/systemd/system-sleep folder not found. Service start-stop logic will not work" << std::endl;
     }
     //Creating script in system-shutdown directory
-    //ADD chmod to make executable
     std::cout << "Creating invoke script in \'system-shutdown\' folder: ";
     if (MT::folder_exists("/lib/systemd/system-shutdown")){
         try {
             MT::create_invoke_script("/lib/systemd/system-shutdown");
+            std::filesystem::permissions("/lib/systemd/system-shutdown/" + MT::Constants::executable_name,
+                                         std::filesystem::perms::owner_exec,
+                                         std::filesystem::perm_options::add);
             std::cout << "Done" << std::endl;
         } catch (std::fstream::failure &e) {
             std::cout << e.what() << std::endl;
@@ -151,15 +156,56 @@ int main(int argc, char **argv)
     else{
         std::cout << "/lib/systemd/system-shutdown folder not found. Service start-stop logic will not work" << std::endl;
     }
-    //Creating simlink in /usr/bin
-    std::cout << "Creating symlink in /usr/bin: ";
+    //Creating script in /usr/bin
+    std::cout << "Creating script in /usr/bin: ";
+    std::ofstream script("/usr/bin/" + MT::Constants::executable_name);
+    if (!script.is_open()){
+        std::cout << std::error_code(errno, std::generic_category()).message() << std::endl;
+        MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+        std::cout << "Unable to create invoke script in /usr/bin folder." << std::endl;
+    }
+    std::string script_code = "#!/bin/sh\n\ncd " + config.install_dir() + "\n./" + MT::Constants::executable_name + " $@";
+    script << script_code;
+    script.close();
     try {
-        std::filesystem::create_symlink(config.install_dir() + '/' + MT::Constants::executable_name, "/usr/bin/" + MT::Constants::executable_name);
+        std::filesystem::permissions("/usr/bin/" + MT::Constants::executable_name,
+                                     std::filesystem::perms::others_exec,
+                                     std::filesystem::perm_options::add);
         std::cout << "Done" << std::endl;
     } catch (std::filesystem::filesystem_error &e) {
         std::cout << e.what() << std::endl;
         MT::Log::log().writeToLog(e.what());
-        std::cout << "Symlink in /usr/bin wasn;t created. Use of full path to executable is a must" << std::endl;
+    }
+    //Creating status file in install directory
+    std::cout << "Creating \'status\' file: ";
+    std::ofstream file(MT::Constants::status_file_name, std::ios_base::trunc);
+    if (!file.is_open()){
+        std::cout << "Error on open \'status\' file for writing: " << std::error_code(errno, std::generic_category()).message() << std::endl;
+        MT::Log::log().writeToLog("Error on open \'status\' file for writing: " + std::error_code(errno, std::generic_category()).message());
+    }
+    else{
+        file << "stopped" << std::endl;
+        file.close();
+        std::cout << "Done" << std::endl;
+    }
+    //Creating log file in install directory
+    std::cout << "Creating \'log.txt\' file: ";
+    file.open(MT::Constants::log_file_name, std::ios_base::trunc);
+    if (!file.is_open()){
+        std::cout << "Error on open \'status\' file for writing: " << std::error_code(errno, std::generic_category()).message() << std::endl;
+        MT::Log::log().writeToLog("Error on open \'status\' file for writing: " + std::error_code(errno, std::generic_category()).message());
+    }
+    else{
+        file.close();
+        try {
+            std::filesystem::permissions(config.install_dir() + '/' + MT::Constants::log_file_name,
+                                         std::filesystem::perms::others_write,
+                                         std::filesystem::perm_options::add);
+            std::cout << "Done" << std::endl;
+        } catch (std::filesystem::filesystem_error &e) {
+            std::cout << e.what() << std::endl;
+            MT::Log::log().writeToLog(e.what());
+        }
     }
     //Copying uninstall executable to install directory
     std::cout << "Copying uninstall_executable to install directory: ";
