@@ -1,5 +1,5 @@
 #include "function_to_fork.h"
-#include <signal.h>
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <memory>
@@ -57,6 +57,7 @@ void MT::brightness_adjust(Config config)
     close(newstdio);
 
     //Setting up the system signal handling
+//    struct sigaction signal_action;
     struct sigaction signal_action;
     signal_action.sa_handler = &display_brightness_signal_handler;
     MT::Log::log().writeToLog("Setting up signal handler for SIGQUIT");
@@ -378,9 +379,10 @@ void MT::display_brightness_signal_handler(int signal)
     }
     else if (signal == SIGTERM){
         MT::Log::log().writeToLog("SIGTERM received");
-        working = false;
-        std::unique_lock<std::mutex> lock(mtx);
-        trigger_for_main_thread.notify_one();
+        MT::Log::log().writeToLog("Ignoring");
+//        working = false;
+//        std::unique_lock<std::mutex> lock(mtx);
+//        trigger_for_main_thread.notify_one();
     }
     else if (signal == SIGUSR1){
         MT::Log::log().writeToLog("SIGUSR1 received");

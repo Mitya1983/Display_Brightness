@@ -39,8 +39,11 @@ int main(int argc, char **argv)
         std::cout << "Done" << std::endl;
     } catch (std::filesystem::filesystem_error &e) {
         std::cout << e.what() << std::endl;
-
-        return 0;
+        MT::Log::log().writeToLog(e.what());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can;t be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     std::filesystem::path source_path(std::filesystem::current_path());
     std::filesystem::current_path(install_dir);
@@ -100,11 +103,10 @@ int main(int argc, char **argv)
         std::cout << e.what() << std::endl;
         MT::Log::log().writeToLog(e.what());
         MT::Log::log().writeToLog("Deleting install directory");
-        std::cout << "Clearing install: ";
-        std::filesystem::remove(install_dir);
-        MT::Log::log().writeToLog("Install direcory was deleted.");
-        std::cout << "Done" << std::endl;
-        return 0;
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can;t be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     //Copying executable to install dir
     std::cout << "Copying executable to install directory: ";
@@ -117,44 +119,110 @@ int main(int argc, char **argv)
         std::cout << e.what() << std::endl;
         MT::Log::log().writeToLog(e.what());
         MT::Log::log().writeToLog("Deleting install directory");
-        std::cout << "Clearing install: ";
-        auto deleted_files = std::filesystem::remove_all(install_dir);
-        MT::Log::log().writeToLog(std::to_string(deleted_files) + " was deleted.");
-        std::cout << "Done" << std::endl;
-        return 0;
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can;t be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     //Creating script in system-sleep directory
     std::cout << "Creating invoke script in \'system-sleep\' folder: ";
     if (MT::folder_exists("/lib/systemd/system-sleep")){
         try {
-            MT::create_invoke_script("/lib/systemd/system-sleep");
+            std::ofstream sleep_script("/lib/systemd/system-sleep/"+MT::Constants::executable_name);
+            if (!sleep_script.is_open()){
+                std::cout << std::error_code(errno, std::generic_category()).message() << std::endl;
+                MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+                MT::Log::log().writeToLog("Clearing install");
+                MT::clear_innstall(config);
+                std::cout << "Install can't be completed." << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            sleep_script << "#!/bin/sh\n\n"
+                            "case $1 in\n"
+                            "pre)\n"
+                            +MT::Constants::executable_name + " stop\n"
+                            ";;\n"
+                            "post)\n"
+                            +MT::Constants::executable_name + " start\n"
+                            ";;\n"
+                            "esac\n\n"
+                            "exit 0" << std::endl;
             std::filesystem::permissions("/lib/systemd/system-sleep/" + MT::Constants::executable_name,
                                          std::filesystem::perms::owner_exec,
                                          std::filesystem::perm_options::add);
             std::cout << "Done" << std::endl;
-        } catch (std::fstream::failure &e) {
+        } catch (std::filesystem::filesystem_error &e) {
             std::cout << e.what() << std::endl;
+            MT::Log::log().writeToLog(e.what());
+            MT::Log::log().writeToLog("Clearing install");
+            MT::clear_innstall(config);
+            std::cout << "Install can't be completed." << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
     else{
         std::cout << "/lib/systemd/system-sleep folder not found. Service start-stop logic will not work" << std::endl;
     }
-    //Creating script in system-shutdown directory
-    std::cout << "Creating invoke script in \'system-shutdown\' folder: ";
-    if (MT::folder_exists("/lib/systemd/system-shutdown")){
-        try {
-            MT::create_invoke_script("/lib/systemd/system-shutdown");
-            std::filesystem::permissions("/lib/systemd/system-shutdown/" + MT::Constants::executable_name,
-                                         std::filesystem::perms::owner_exec,
-                                         std::filesystem::perm_options::add);
-            std::cout << "Done" << std::endl;
-        } catch (std::fstream::failure &e) {
-            std::cout << e.what() << std::endl;
-            MT::Log::log().writeToLog(e.what());
-        }
+    //Creating script in /etc/init.d directory
+    std::cout << "Creating init script in \'/etc/init.d\' folder: ";
+    try {
+        MT::create_init_script();
+        std::cout << "Done" << std::endl;
+    } catch (std::fstream::failure &e) {
+        std::cout << e.what() << std::endl;
+        MT::Log::log().writeToLog(e.what());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
-    else{
-        std::cout << "/lib/systemd/system-shutdown folder not found. Service start-stop logic will not work" << std::endl;
+    //Making init script executable
+    std::cout << "Making script executable: ";
+    try {
+        std::filesystem::permissions("/etc/init.d/" + MT::Constants::executable_name,
+                                     std::filesystem::perms::owner_exec|std::filesystem::perms::group_exec|std::filesystem::perms::others_exec,
+                                     std::filesystem::perm_options::add);
+        std::cout << "Done" << std::endl;
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        MT::Log::log().writeToLog(e.what());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    //Creating symlink in /etc/rc6.d folder
+    try {
+        std::filesystem::create_symlink("/etc/init.d/" + MT::Constants::executable_name, "/etc/rc6.d/K01aa-" + MT::Constants::executable_name);
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        MT::Log::log().writeToLog(e.what());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    //Creating symlink in /etc/rc0.d folder
+    try {
+        std::filesystem::create_symlink("/etc/init.d/" + MT::Constants::executable_name, "/etc/rc0.d/K01aa-" + MT::Constants::executable_name);
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        MT::Log::log().writeToLog(e.what());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    //Creating symlink in /etc/rc5.d folder
+    try {
+        std::filesystem::create_symlink("/etc/init.d/" + MT::Constants::executable_name, "/etc/rc5.d/S99" + MT::Constants::executable_name);
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        MT::Log::log().writeToLog(e.what());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     //Creating script in /usr/bin
     std::cout << "Creating script in /usr/bin: ";
@@ -162,7 +230,10 @@ int main(int argc, char **argv)
     if (!script.is_open()){
         std::cout << std::error_code(errno, std::generic_category()).message() << std::endl;
         MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
-        std::cout << "Unable to create invoke script in /usr/bin folder." << std::endl;
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     std::string script_code = "#!/bin/sh\n\ncd " + config.install_dir() + "\n./" + MT::Constants::executable_name + " $@";
     script << script_code;
@@ -175,6 +246,10 @@ int main(int argc, char **argv)
     } catch (std::filesystem::filesystem_error &e) {
         std::cout << e.what() << std::endl;
         MT::Log::log().writeToLog(e.what());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     //Creating status file in install directory
     std::cout << "Creating \'status\' file: ";
@@ -182,6 +257,10 @@ int main(int argc, char **argv)
     if (!file.is_open()){
         std::cout << "Error on open \'status\' file for writing: " << std::error_code(errno, std::generic_category()).message() << std::endl;
         MT::Log::log().writeToLog("Error on open \'status\' file for writing: " + std::error_code(errno, std::generic_category()).message());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     else{
         file << "stopped" << std::endl;
@@ -192,8 +271,12 @@ int main(int argc, char **argv)
     std::cout << "Creating \'log.txt\' file: ";
     file.open(MT::Constants::log_file_name, std::ios_base::trunc);
     if (!file.is_open()){
-        std::cout << "Error on open \'status\' file for writing: " << std::error_code(errno, std::generic_category()).message() << std::endl;
+        std::cout << "Error on open \'log.txt\' file for writing: " << std::error_code(errno, std::generic_category()).message() << std::endl;
         MT::Log::log().writeToLog("Error on open \'status\' file for writing: " + std::error_code(errno, std::generic_category()).message());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
     else{
         file.close();
@@ -205,6 +288,10 @@ int main(int argc, char **argv)
         } catch (std::filesystem::filesystem_error &e) {
             std::cout << e.what() << std::endl;
             MT::Log::log().writeToLog(e.what());
+            MT::Log::log().writeToLog("Clearing install");
+            MT::clear_innstall(config);
+            std::cout << "Install can't be completed." << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
     //Copying uninstall executable to install directory
@@ -217,8 +304,32 @@ int main(int argc, char **argv)
     } catch (std::filesystem::filesystem_error &e) {
         std::cout << e.what() << std::endl;
         MT::Log::log().writeToLog(e.what());
-        std::cout << "Uninstall_executable wasn't copied. You can copy it from source." << std::endl;
-        return 0;
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
     }
+    //Updating systemctl
+    std::cout << "Updating systemctl: ";
+    int system_status = system("systemctl daemon-reload");
+    if (system_status == -1){
+        std::cout << std::error_code(errno, std::generic_category()).message() << std::endl;
+        MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+        MT::Log::log().writeToLog("Clearing install");
+        MT::clear_innstall(config);
+        std::cout << "Install can't be completed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::cout << "Done" << std::endl;
+    //Starting service
+    if (config.is_ready()){
+        system_status = system("dispbr start");
+        if (system_status == -1){
+            std::cout << "Couldn't start the service: " <<  std::error_code(errno, std::generic_category()).message() << std::endl;
+            MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+            std::cout << "Install was completed succesfully but service wasn't started." << std::endl;
+        }
+    }
+    std::cout << "Installation is finished." << std::endl;
     return 0;
 }

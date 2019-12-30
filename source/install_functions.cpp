@@ -134,37 +134,41 @@ void MT::write_display_state_file_path(Config &config)
     }
 }
 
-void MT::create_invoke_script(const std::string &path)
+void MT::create_init_script()
 {
-    std::string file_path = path;
-    if (file_path[file_path.length()] == '/'){
-        file_path += MT::Constants::executable_name;
-    }
-    else{
-        file_path += "/" + MT::Constants::executable_name;
-    }
-    std::ofstream file(file_path);
+    std::ofstream file("/etc/init.d/" + MT::Constants::executable_name);
     if (!file.is_open()){
         std::string msg = "bool MT::add_script_invoke_script_to_folder(const std::string &path): " +
                             std::error_code(errno, std::generic_category()).message();
         throw std::fstream::failure(msg);
     }
-    file << invoke_script();
+    file << init_script();
     file.close();
 }
 
-std::string MT::invoke_script()
+std::string MT::init_script()
 {
     std::string script = "#!/bin/sh\n\n"
                          "case $1 in\n"
-                         "\"pre\")\n"
-                         "/home/mitya/Projects/Display_Brightness/Build/Display_Brightness \"stop\"\n"
+                         "start)\n"
+                         + MT::Constants::executable_name + " \"start\"\n"
                          ";;\n"
-                         "\"post\")\n"
-                         "/home/mitya/Projects/Display_Brightness/Build/Display_Brightness \"run\"\n"
+                         "stop)\n"
+                         + MT::Constants::executable_name + " \"stop\"\n"
                          ";;\n"
-                         "esac";
-
+                         "restart)\n"
+                         + MT::Constants::executable_name + " \"stop\"\n"
+                         "sleep 2\n"
+                         + MT::Constants::executable_name + " \"start\"\n"
+                         ";;\n"
+                         "reload|force_reload)\n"
+                         "#nothing to do\n"
+                         ";;\n"
+                         "status)\n"
+                         + MT::Constants::executable_name + " \"status\"\n"
+                         ";;\n"
+                         "esac\n\n"
+                         "exit 0";
     return script;
 
 }
@@ -174,4 +178,37 @@ bool MT::folder_exists(const std::string &path)
     std::filesystem::directory_entry folder(path);
 
     return folder.exists();
+}
+
+void MT::clear_innstall(const Config &config)
+{
+    using file_or_directory = std::filesystem::directory_entry;
+    file_or_directory install_dir(config.install_dir());
+    if (install_dir.exists()){
+        std::filesystem::remove_all(install_dir);
+    }
+    file_or_directory sleep_script("/lib/systemd/system-sleep/"+MT::Constants::executable_name);
+    if (sleep_script.exists()){
+        std::filesystem::remove(sleep_script);
+    }
+    file_or_directory init_script("/etc/ini.d/"+MT::Constants::executable_name);
+    if (init_script.exists()){
+        std::filesystem::remove(init_script);
+    }
+    file_or_directory rc0_script("/etc/rc0.d/K01aa-"+MT::Constants::executable_name);
+    if (rc0_script.exists()){
+        std::filesystem::remove(rc0_script);
+    }
+    file_or_directory rc5_script("/etc/rc5.d/S99"+MT::Constants::executable_name);
+    if (rc5_script.exists()){
+        std::filesystem::remove(rc5_script);
+    }
+    file_or_directory rc6_script("/etc/rc6.d/K01aa-"+MT::Constants::executable_name);
+    if (rc6_script.exists()){
+        std::filesystem::remove(rc6_script);
+    }
+    file_or_directory bin_script("/usr/bin/"+MT::Constants::executable_name);
+    if (bin_script.exists()){
+        std::filesystem::remove(bin_script);
+    }
 }

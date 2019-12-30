@@ -44,7 +44,7 @@ int main()
         std::cout << "Done" << std::endl;
     }
     std::cout << "Done" << std::endl;
-    std::cout << "Deleting symlink in /usr/bin: ";
+    std::cout << "Deleting script in /usr/bin: ";
     try {
         std::filesystem::remove("/usr/bin/" + MT::Constants::executable_name);
         std::cout << "Done" << std::endl;
@@ -62,15 +62,37 @@ int main()
             return 1;
         }
     }
-    if (std::filesystem::directory_entry("/lib/systemd/system-shutdown/" + MT::Constants::executable_name).exists()){
-        std::cout << "Deleting invoke scirpt in /lib/systemd/system-shutdown: ";
-        try {
-            std::filesystem::remove("/lib/systemd/system-shutdown/" + MT::Constants::executable_name);
-            std::cout << "Done" << std::endl;
-        } catch (std::filesystem::filesystem_error &e) {
-            std::cout << e.what() << std::endl;
-            return 1;
-        }
+    std::cout << "Deleting symlink in /etc/rc0.d/: ";
+    try {
+        std::filesystem::remove("/etc/rc0.d/K01aa-" + MT::Constants::executable_name);
+        std::cout << "Done" << std::endl;
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        return 1;
+    }
+    std::cout << "Deleting symlink in /etc/rc5.d/: ";
+    try {
+        std::filesystem::remove("/etc/rc5.d/S99" + MT::Constants::executable_name);
+        std::cout << "Done" << std::endl;
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        return 1;
+    }
+    std::cout << "Deleting symlink in /etc/rc6.d/: ";
+    try {
+        std::filesystem::remove("/etc/rc6.d/K01aa-" + MT::Constants::executable_name);
+        std::cout << "Done" << std::endl;
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        return 1;
+    }
+    std::cout << "Deleting init script in /etc/init.d/: ";
+    try {
+        std::filesystem::remove("/etc/init.d/" + MT::Constants::executable_name);
+        std::cout << "Done" << std::endl;
+    } catch (std::filesystem::filesystem_error &e) {
+        std::cout << e.what() << std::endl;
+        return 1;
     }
     std::filesystem::path working_path = std::filesystem::current_path();
     std::cout << "Deleting " << working_path << ": ";

@@ -3,6 +3,7 @@
 #include <condition_variable>
 #include <array>
 #include <future>
+#include <signal.h>
 #include "config.h"
 namespace MT{
 
