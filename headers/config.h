@@ -16,6 +16,7 @@ private:
     int _time_interval;
     bool _ready;
     std::string _to_file(const std::string &code, const std::string &value);
+    bool _check_if_ready();
 public:
     //CONSTRUCTORS
     Config();

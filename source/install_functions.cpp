@@ -191,7 +191,7 @@ void MT::clear_innstall(const Config &config)
     if (sleep_script.exists()){
         std::filesystem::remove(sleep_script);
     }
-    file_or_directory init_script("/etc/ini.d/"+MT::Constants::executable_name);
+    file_or_directory init_script("/etc/init.d/"+MT::Constants::executable_name);
     if (init_script.exists()){
         std::filesystem::remove(init_script);
     }

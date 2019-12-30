@@ -13,6 +13,29 @@ std::string MT::Config::_to_file(const std::string &code, const std::string &val
     return code + '=' + value;
 }
 
+bool MT::Config::_check_if_ready()
+{
+    if (_install_dir_name == "null"){
+        return false;
+    }
+    if (_display_state_file == "null"){
+        return false;
+    }
+    if (_display_max_brightness_file == "null"){
+        return false;
+    }
+    if (_display_brightness_file == "null"){
+        return false;
+    }
+    if (_actual_display_brightness_file == "null"){
+        return false;
+    }
+    if (_time_interval == 0){
+        return false;
+    }
+    return true;
+}
+
 MT::Config::Config() :
     _install_dir_name("null"),
     _display_state_file("null"),
@@ -28,31 +51,37 @@ MT::Config::Config() :
 void MT::Config::set_install_dir_name(const std::string &install_dir)
 {
     _install_dir_name = install_dir;
+    _ready = _check_if_ready();
 }
 
 void MT::Config::set_display_state_file(const std::string &display_state_file)
 {
     _display_state_file = display_state_file;
+    _ready = _check_if_ready();
 }
 
 void MT::Config::set_display_max_brightness_file(const std::string &display_max_brightness_file)
 {
     _display_max_brightness_file = display_max_brightness_file;
+    _ready = _check_if_ready();
 }
 
 void MT::Config::set_display_brightness_file(const std::string &display_brightness_file)
 {
     _display_brightness_file = display_brightness_file;
+    _ready = _check_if_ready();
 }
 
 void MT::Config::set_actual_display_brightness_file(const std::string &actual_display_brightness_file)
 {
     _actual_display_brightness_file = actual_display_brightness_file;
+    _ready = _check_if_ready();
 }
 
 void MT::Config::set_time_interval(int time_interval)
 {
     _time_interval = time_interval;
+    _ready = _check_if_ready();
 }
 
 const std::string &MT::Config::install_dir() const
@@ -120,10 +149,7 @@ void MT::Config::load_config()
             _time_interval = std::stoi(config_line.substr(4));
         }
     }
-    if (_install_dir_name == "null" || _display_state_file == "null" || _display_max_brightness_file == "null"
-        || _display_brightness_file == "null" || _actual_display_brightness_file == "null" || _time_interval == 0){
-        _ready = false;
-    }
+    _ready = _check_if_ready();
     config.close();
 }
 
