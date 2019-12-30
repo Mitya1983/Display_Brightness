@@ -322,13 +322,24 @@ int main(int argc, char **argv)
     }
     std::cout << "Done" << std::endl;
     //Starting service
+    std::cout << "Starting service: ";
     if (config.is_ready()){
-        system_status = system("dispbr start");
+        system_status = system("sudo service dispbr start");
         if (system_status == -1){
             std::cout << "Couldn't start the service: " <<  std::error_code(errno, std::generic_category()).message() << std::endl;
             MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
             std::cout << "Install was completed succesfully but service wasn't started." << std::endl;
         }
+        system_status = system("sudo dispbr start");
+        if (system_status == -1){
+            std::cout << "Couldn't start the service: " <<  std::error_code(errno, std::generic_category()).message() << std::endl;
+            MT::Log::log().writeToLog(std::error_code(errno, std::generic_category()).message());
+            std::cout << "Install was completed succesfully but service wasn't started." << std::endl;
+        }
+        std::cout << "Done" << std::endl;
+    }
+    else{
+        std::cout << "Can't start service. Config isn't ready." << std::endl;
     }
     std::cout << "Installation is finished." << std::endl;
     return 0;
